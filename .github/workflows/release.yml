@@ -1,0 +1,52 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create tar.gz archive
+        run: tar -czf skan.tar.gz skan.zsh
+
+      - name: Upload binary to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: skan.tar.gz
+          asset_name: skan.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create and update Homebrew formula
+        uses: mislav/bump-homebrew-formula-action@v2
+        with:
+          formula-name: skan
+          formula-path: Formula/skan.rb
+          homebrew-tap: ${{ github.repository_owner }}/homebrew-zapfhahn
+          base-branch: main
+          download-url: https://github.com/${{ github.repository }}/releases/download/v${{ steps.extract_version.outputs.VERSION }}/skan.tar.gz
+          commit-message: |
+            {{formulaName}} {{version}}
+        env:
+          COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
