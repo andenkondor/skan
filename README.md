@@ -1,5 +1,7 @@
 # Skan
 
+> **ℹ️ Info:** This project is heavily inspired by <https://junegunn.github.io/fzf/tips/ripgrep-integration>
+
 A powerful file search and preview tool that integrates with [fzf](https://github.com/junegunn/fzf) and supports [SOPS](https://github.com/mozilla/sops) encrypted files.
 
 ## Installation
@@ -56,4 +58,4 @@ The script creates a temporary SOPS opener script that allows ripgrep to search 
 
 ## License
 
-MIT 
+MIT
