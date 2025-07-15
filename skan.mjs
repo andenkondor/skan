@@ -152,7 +152,7 @@ function transform() {
 
   echo(
     isRgSearch
-      ? "transform-search(./skan.mjs --internal-transform-search)+reload(sleep 0.1;./skan.mjs --internal-reload)"
+      ? "transform-search(skan --internal-transform-search)+reload(sleep 0.1;skan --internal-reload)"
       : `transform-search(echo ${fzfSearchTerm})`,
   );
 }
@@ -264,7 +264,7 @@ async function main() {
         // simple options
         ...["--delimiter", ":"],
         ...["--prompt", RG_SEARCH_PLACEHOLDER],
-        ...["--preview", "./skan.mjs --internal-preview {1} {2}"],
+        ...["--preview", "skan --internal-preview {1} {2}"],
         ...["--preview-window", "~4,+{2}+4/3,<80(up)"],
         ...[
           "--query",
@@ -276,14 +276,8 @@ async function main() {
         ...["--bind", "alt-a:select-all"],
         ...["--bind", "alt-d:deselect-all"],
         ...["--bind", "ctrl-/:toggle-preview"],
-        ...[
-          "--bind",
-          "ctrl-g:transform:(./skan.mjs --internal-transform-prompt)",
-        ],
-        ...[
-          "--bind",
-          "start,change:transform:(./skan.mjs --internal-transform)",
-        ],
+        ...["--bind", "ctrl-g:transform:(skan --internal-transform-prompt)"],
+        ...["--bind", "start,change:transform:(skan --internal-transform)"],
         // colors
         ...[
           "bg+:#262626",
