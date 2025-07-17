@@ -8,9 +8,13 @@ const FZF_SEARCH_PLACEHOLDER = ":fzf>";
 const RG_SEARCH_PARAM_DIVIDER = " -- ";
 
 const {
-  env: { FZF_QUERY, FZF_PROMPT, FZF_HEADER_LABEL },
+  env: { FZF_QUERY, FZF_PROMPT },
   argv: args,
 } = process;
+
+function toBase64(input) {
+  return Buffer.from(input).toString("base64");
+}
 
 const currentTmpFiles = [];
 
@@ -148,22 +152,13 @@ function reload() {
   echo(rgResult);
 }
 function transform() {
-  const { isRgSearch, fzfSearchTerm } = getCurrentState();
+  const { isRgSearch } = getCurrentState();
 
   echo(
     isRgSearch
-      ? "transform-search(skan --internal-transform-search)+reload(sleep 0.1;skan --internal-reload)"
-      : `transform-search(echo ${fzfSearchTerm})`,
+      ? "reload(sleep 0.1;skan --internal-reload)+transform-search(skan --internal-transform-search)"
+      : `transform-search(echo ${toBase64(fzfSearchTermBase64)} | base64 -d)`,
   );
-}
-
-function transformHeader() {
-  echo(JSON.stringify(getCurrentState()));
-}
-
-function transformQuery() {
-  const { inactiveSearchQuery } = JSON.parse(FZF_HEADER_LABEL);
-  echo(inactiveSearchQuery);
 }
 
 function transformPrompt() {
@@ -177,14 +172,9 @@ function transformPrompt() {
   const newPrompt = `${activeSearchQuery}${querySearchEngine}`;
   const newSearch = inactiveSearchQuery;
 
-  // echo(`prompt:${newPrompt}+search:${newSearch}`);
-  // echo(
-  //   `transform-prompt(echo '${newPrompt}')+search:${newSearch}+transform-query(echo '${newSearch}')`,
-  // );
   echo(
-    `transform-prompt(echo '${newPrompt}')+transform-query(echo '${newSearch}')`,
+    `transform-prompt(echo ${toBase64(newPrompt)} | base64 -d)+transform-query(echo ${toBase64(newSearch)} | base64 -d)`,
   );
-  // echo(`transform-prompt(echo newP)+search:a+replace-query:newQ`);
 }
 
 async function main() {
@@ -193,12 +183,10 @@ async function main() {
   try {
     const {
       _: defaultSearch,
-      t: internalTransformQuery,
       o: internalTransformPrompt,
       p: internalTransformSearch,
       r: internalReload,
       v: internalPreview,
-      h: internalTransformHeader,
       z: internalTransform,
       "--": multiWordSearch,
     } = minimist(args.slice(3), {
@@ -207,7 +195,6 @@ async function main() {
         t: "internal-transform-query",
         p: "internal-transform-search",
         o: "internal-transform-prompt",
-        h: "internal-transform-header",
         z: "internal-transform",
         r: "internal-reload",
         v: "internal-preview",
@@ -218,16 +205,6 @@ async function main() {
 
     if (internalTransform) {
       transform();
-      process.exit(0);
-    }
-
-    if (internalTransformHeader) {
-      transformHeader();
-      process.exit(0);
-    }
-
-    if (internalTransformQuery) {
-      transformQuery();
       process.exit(0);
     }
 
@@ -252,7 +229,7 @@ async function main() {
       process.exit(0);
     }
 
-    const fzfResult = await $.spawnSync(
+    const fzfResult = $.spawnSync(
       "fzf",
       [
         // flags
@@ -276,8 +253,14 @@ async function main() {
         ...["--bind", "alt-a:select-all"],
         ...["--bind", "alt-d:deselect-all"],
         ...["--bind", "ctrl-/:toggle-preview"],
-        ...["--bind", "ctrl-g:transform:(skan --internal-transform-prompt)"],
-        ...["--bind", "start,change:transform:(skan --internal-transform)"],
+        ...[
+          "--bind",
+          "ctrl-g:transform:(skan --internal-transform-prompt)",
+        ],
+        ...[
+          "--bind",
+          "start,change:transform:(skan --internal-transform)",
+        ],
         // colors
         ...[
           "bg+:#262626",
@@ -295,11 +278,13 @@ async function main() {
         ].flatMap((s) => ["--color", s]),
       ],
       {
-        stdio: "inherit",
+        encoding: "utf-8",
       },
     );
 
-    await handleFzfResult(fzfResult);
+    const resultLines = fzfResult.stdout.split("\n").filter(Boolean);
+
+    await handleFzfResult(resultLines);
   } catch (e) {
     echo(chalk.red(e));
     exitCode = 1;
