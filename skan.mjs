@@ -252,6 +252,7 @@ async function main() {
         ...["--bind", "alt-a:select-all"],
         ...["--bind", "alt-d:deselect-all"],
         ...["--bind", "ctrl-/:toggle-preview"],
+        ...["--bind", "ctrl-s:execute(idea --line {2} {1})"],
         ...["--bind", "ctrl-g:transform:(skan --internal-transform-prompt)"],
         ...["--bind", "start,change:transform:(skan --internal-transform)"],
         // colors
