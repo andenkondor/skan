@@ -24,8 +24,8 @@ function createTempFile(content) {
   return filePath;
 }
 
-async function isSopsFile(filePath) {
-  return (await $`sops-opener --check-only ${filePath}`.exitCode) === 0;
+function isSopsFile(filePath) {
+  return $.sync(`${["sops-opener", "--check-only", filePath]}`).exitCode === 0;
 }
 
 async function preview(filePath, lineNumber) {
@@ -33,12 +33,18 @@ async function preview(filePath, lineNumber) {
     return;
   }
 
-  if (await isSopsFile(filePath)) {
-    await $`sops -d ${filePath}`.pipe(
-      $`bat --style=full --color=always --highlight-line ${lineNumber}`,
-    );
+  const baseBatCommand = [
+    "bat",
+    ...["--style", "full"],
+    ...["--color", "always"],
+    "--highlight-line",
+    lineNumber,
+  ];
+
+  if (isSopsFile(filePath)) {
+    await $`${["sops", "--decrypt", filePath]}`.pipe($`${baseBatCommand}`);
   } else {
-    await $`bat --style=full --color=always --highlight-line ${lineNumber} ${filePath}`;
+    await $`${[...baseBatCommand, filePath]}`;
   }
 }
 
@@ -52,7 +58,7 @@ async function handleFzfResult(fzfResult) {
 
   if (fzfResult.length === 1) {
     const [file, line, column] = fzfResult[0].split(":");
-    if (await isSopsFile(file)) {
+    if (isSopsFile(file)) {
       await $.spawnSync("sops", [file], {
         stdio: "inherit",
       });
@@ -121,11 +127,7 @@ function transformSearch() {
 function reload() {
   const { isRgSearch, rgSearchTerm, rgParams } = getCurrentState();
 
-  if (!isRgSearch) {
-    return;
-  }
-
-  if (!rgSearchTerm) {
+  if (!isRgSearch || !rgSearchTerm) {
     return;
   }
 
@@ -136,14 +138,14 @@ function reload() {
         "--column",
         "--line-number",
         "--no-heading",
-        "--color",
-        "always",
         "--smart-case",
+        "--fixed-strings",
+        ...["--color", "always"],
         ...rgParams,
         rgSearchTerm.trim(),
       ],
       {
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: "inherit",
         encoding: "utf-8",
       },
     ).stdout,
@@ -152,12 +154,15 @@ function reload() {
   echo(rgResult);
 }
 function transform() {
-  const { isRgSearch } = getCurrentState();
+  const { isRgSearch, fzfSearchTerm } = getCurrentState();
 
   echo(
     isRgSearch
-      ? "reload(sleep 0.1;skan --internal-reload)+transform-search(skan --internal-transform-search)"
-      : `transform-search(echo ${toBase64(fzfSearchTermBase64)} | base64 -d)`,
+      ? [
+          "reload(sleep 0.1;skan --internal-reload)",
+          "+transform-search(skan --internal-transform-search)",
+        ].join("")
+      : `transform-search(echo ${toBase64(fzfSearchTerm)} | base64 -d)`,
   );
 }
 
@@ -173,7 +178,10 @@ function transformPrompt() {
   const newSearch = inactiveSearchQuery;
 
   echo(
-    `transform-prompt(echo ${toBase64(newPrompt)} | base64 -d)+transform-query(echo ${toBase64(newSearch)} | base64 -d)`,
+    [
+      `transform-prompt(echo ${toBase64(newPrompt)} | base64 -d)`,
+      `+transform-query(echo ${toBase64(newSearch)} | base64 -d)`,
+    ].join(""),
   );
 }
 
@@ -183,24 +191,20 @@ async function main() {
   try {
     const {
       _: defaultSearch,
-      o: internalTransformPrompt,
-      p: internalTransformSearch,
+      p: internalTransformPrompt,
       r: internalReload,
+      s: internalTransformSearch,
       v: internalPreview,
       z: internalTransform,
-      "--": multiWordSearch,
     } = minimist(args.slice(3), {
       alias: {
-        s: "search-sops",
-        t: "internal-transform-query",
-        p: "internal-transform-search",
-        o: "internal-transform-prompt",
-        z: "internal-transform",
+        p: "internal-transform-prompt",
         r: "internal-reload",
+        s: "internal-transform-search",
         v: "internal-preview",
+        z: "internal-transform",
       },
-      boolean: ["s", "t", "p", "r", "o", "h", "v", "z"],
-      "--": true,
+      boolean: ["o", "p", "r", "s", "v", "z"],
     });
 
     if (internalTransform) {
@@ -243,24 +247,13 @@ async function main() {
         ...["--prompt", RG_SEARCH_PLACEHOLDER],
         ...["--preview", "skan --internal-preview {1} {2}"],
         ...["--preview-window", "~4,+{2}+4/3,<80(up)"],
-        ...[
-          "--query",
-          multiWordSearch?.length
-            ? `'${multiWordSearch.join(" ")}'`
-            : defaultSearch.join(" "),
-        ],
+        ...["--query", defaultSearch.join(" ")],
         // bindings
         ...["--bind", "alt-a:select-all"],
         ...["--bind", "alt-d:deselect-all"],
         ...["--bind", "ctrl-/:toggle-preview"],
-        ...[
-          "--bind",
-          "ctrl-g:transform:(skan --internal-transform-prompt)",
-        ],
-        ...[
-          "--bind",
-          "start,change:transform:(skan --internal-transform)",
-        ],
+        ...["--bind", "ctrl-g:transform:(skan --internal-transform-prompt)"],
+        ...["--bind", "start,change:transform:(skan --internal-transform)"],
         // colors
         ...[
           "bg+:#262626",
