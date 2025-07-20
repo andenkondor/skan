@@ -131,26 +131,23 @@ function reload() {
     return;
   }
 
-  const rgResult = String(
-    $.spawnSync(
-      "rg",
-      [
-        "--column",
-        "--line-number",
-        "--no-heading",
-        "--smart-case",
-        "--fixed-strings",
-        ...["--color", "always"],
-        ...rgParams,
-        rgSearchTerm.trim(),
-      ],
-      {
-        stdio: "inherit",
-        encoding: "utf-8",
-      },
-    ).stdout,
+  $.spawnSync(
+    "rg",
+    [
+      "--column",
+      "--line-number",
+      "--no-heading",
+      "--smart-case",
+      "--fixed-strings",
+      ...["--color", "always"],
+      ...rgParams,
+      rgSearchTerm.trim(),
+    ],
+    {
+      stdio: "inherit",
+      encoding: "utf-8",
+    },
   );
-
   echo(rgResult);
 }
 function transform() {
