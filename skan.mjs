@@ -54,22 +54,28 @@ async function handleFzfResult(fzfResult) {
     throw new Error("no fzf result");
   }
 
-  const editor = (await which("nvim", { nothrow: true })) ?? "vim";
+  const vimishEditor = (await which("nvim", { nothrow: true })) ?? "vim";
 
   if (fzfResult.length === 1) {
-    const [file, line, column] = fzfResult[0].split(":");
+    const { file, line, column } = fzfResult[0];
     if (isSopsFile(file)) {
       await $.spawnSync("sops", [file], {
         stdio: "inherit",
       });
     } else {
-      await $.spawnSync(editor, [file, `+call cursor(${line},${column})`], {
-        stdio: "inherit",
-      });
+      await $.spawnSync(
+        vimishEditor,
+        [file, `+call cursor(${line},${column})`],
+        {
+          stdio: "inherit",
+        },
+      );
     }
   } else {
-    const fzfOutputFile = createTempFile(fzfResult.join("\n"));
-    await $.spawnSync(editor, ["+copen", "-q", fzfOutputFile], {
+    const fzfOutputFile = createTempFile(
+      fzfResult.map((entry) => entry.original).join("\n"),
+    );
+    await $.spawnSync(vimishEditor, ["+copen", "-q", fzfOutputFile], {
       stdio: "inherit",
     });
   }
@@ -79,10 +85,8 @@ function getCurrentState() {
   const isRgSearch = FZF_PROMPT?.endsWith(RG_SEARCH_PLACEHOLDER);
   const isFzfSearch = !isRgSearch;
   let activeSearchQuery = FZF_QUERY;
-  let inactiveSearchQuery = (
-    isFzfSearch
-      ? FZF_PROMPT.split(FZF_SEARCH_PLACEHOLDER)
-      : FZF_PROMPT.split(RG_SEARCH_PLACEHOLDER)
+  let inactiveSearchQuery = FZF_PROMPT.split(
+    isFzfSearch ? FZF_SEARCH_PLACEHOLDER : RG_SEARCH_PLACEHOLDER,
   ).at(0);
 
   const fullRgSearch = isRgSearch ? activeSearchQuery : inactiveSearchQuery;
@@ -114,16 +118,6 @@ function getCurrentState() {
   };
 }
 
-function transformSearch() {
-  const { fzfSearchTerm } = getCurrentState();
-
-  if (!fzfSearchTerm) {
-    return;
-  }
-
-  echo(fzfSearchTerm);
-}
-
 function reload() {
   const { isRgSearch, rgSearchTerm, rgParams } = getCurrentState();
 
@@ -135,10 +129,10 @@ function reload() {
     "rg",
     [
       "--column",
+      "--fixed-strings",
       "--line-number",
       "--no-heading",
       "--smart-case",
-      "--fixed-strings",
       ...["--color", "always"],
       ...rgParams,
       rgSearchTerm.trim(),
@@ -149,16 +143,17 @@ function reload() {
     },
   );
 }
+
 function transform() {
   const { isRgSearch, fzfSearchTerm } = getCurrentState();
 
+  const transformSearch = `transform-search(echo ${toBase64(fzfSearchTerm)} | base64 -d)`;
+
   echo(
-    isRgSearch
-      ? [
-          "reload(sleep 0.1;skan --internal-reload)",
-          "+transform-search(skan --internal-transform-search)",
-        ].join("")
-      : `transform-search(echo ${toBase64(fzfSearchTerm)} | base64 -d)`,
+    [
+      ...(isRgSearch ? ["reload(sleep 0.1;skan --internal-reload)"] : []),
+      transformSearch,
+    ].join("+"),
   );
 }
 
@@ -176,8 +171,8 @@ function transformPrompt() {
   echo(
     [
       `transform-prompt(echo ${toBase64(newPrompt)} | base64 -d)`,
-      `+transform-query(echo ${toBase64(newSearch)} | base64 -d)`,
-    ].join(""),
+      `transform-query(echo ${toBase64(newSearch)} | base64 -d)`,
+    ].join("+"),
   );
 }
 
@@ -189,18 +184,16 @@ async function main() {
       _: defaultSearch,
       p: internalTransformPrompt,
       r: internalReload,
-      s: internalTransformSearch,
       v: internalPreview,
       z: internalTransform,
     } = minimist(args.slice(3), {
       alias: {
         p: "internal-transform-prompt",
         r: "internal-reload",
-        s: "internal-transform-search",
         v: "internal-preview",
         z: "internal-transform",
       },
-      boolean: ["o", "p", "r", "s", "v", "z"],
+      boolean: ["p", "r", "v", "z"],
     });
 
     if (internalTransform) {
@@ -210,11 +203,6 @@ async function main() {
 
     if (internalTransformPrompt) {
       transformPrompt();
-      process.exit(0);
-    }
-
-    if (internalTransformSearch) {
-      transformSearch();
       process.exit(0);
     }
 
@@ -272,7 +260,13 @@ async function main() {
       },
     );
 
-    const resultLines = fzfResult.stdout.split("\n").filter(Boolean);
+    const resultLines = fzfResult.stdout
+      .split("\n")
+      .filter(Boolean)
+      .map((entry) => {
+        const [file, line, column] = entry.split(":");
+        return { file, line, column, original: entry };
+      });
 
     await handleFzfResult(resultLines);
   } catch (e) {
