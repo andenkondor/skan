@@ -148,7 +148,6 @@ function reload() {
       encoding: "utf-8",
     },
   );
-  echo(rgResult);
 }
 function transform() {
   const { isRgSearch, fzfSearchTerm } = getCurrentState();
