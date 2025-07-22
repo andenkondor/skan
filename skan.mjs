@@ -7,8 +7,15 @@ const FZF_SEARCH_PLACEHOLDER = ":fzf>";
 
 const RG_SEARCH_PARAM_DIVIDER = " -- ";
 
+const NTH = {
+  FILE_NAME: "1",
+  LINE_NUMBER: "2",
+  COLUMN_NUMBER: "3",
+  CODE_LINE: "4..",
+};
+
 const {
-  env: { FZF_QUERY, FZF_PROMPT },
+  env: { FZF_QUERY, FZF_PROMPT, FZF_NTH },
   argv: args,
 } = process;
 
@@ -157,6 +164,22 @@ function transform() {
   );
 }
 
+function transformHeader() {
+  let nth = "All";
+
+  if (FZF_NTH === NTH.FILE_NAME) {
+    nth = "File name";
+  }
+
+  if (FZF_NTH === NTH.CODE_LINE) {
+    nth = "Code";
+  }
+
+  const newHeader = `nth: ${nth}`;
+
+  echo(`transform-header(echo ${newHeader})`);
+}
+
 function transformPrompt() {
   const { isRgSearch, inactiveSearchQuery, activeSearchQuery } =
     getCurrentState();
@@ -182,22 +205,29 @@ async function main() {
   try {
     const {
       _: defaultSearch,
+      h: internalTransformHeader,
       p: internalTransformPrompt,
       r: internalReload,
       v: internalPreview,
       z: internalTransform,
     } = minimist(args.slice(3), {
       alias: {
+        h: "internal-transform-header",
         p: "internal-transform-prompt",
         r: "internal-reload",
         v: "internal-preview",
         z: "internal-transform",
       },
-      boolean: ["p", "r", "v", "z"],
+      boolean: ["h", "p", "r", "v", "z"],
     });
 
     if (internalTransform) {
       transform();
+      process.exit(0);
+    }
+
+    if (internalTransformHeader) {
+      transformHeader();
       process.exit(0);
     }
 
@@ -229,16 +259,24 @@ async function main() {
         // simple options
         ...["--delimiter", ":"],
         ...["--prompt", RG_SEARCH_PLACEHOLDER],
-        ...["--preview", "skan --internal-preview {1} {2}"],
-        ...["--preview-window", "~4,+{2}+4/3,<80(up)"],
+        ...[
+          "--preview",
+          `skan --internal-preview {${NTH.FILE_NAME}} {${NTH.LINE_NUMBER}}`,
+        ],
+        ...["--preview-window", `~4,+{${NTH.LINE_NUMBER}}+4/3,<80(up)`],
         ...["--query", defaultSearch.join(" ")],
         // bindings
         ...["--bind", "alt-a:select-all"],
         ...["--bind", "alt-d:deselect-all"],
         ...["--bind", "ctrl-/:toggle-preview"],
-        ...["--bind", "ctrl-s:execute(idea --line {2} {1})"],
+        ...[
+          "--bind",
+          `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
+        ],
         ...["--bind", "ctrl-g:transform:(skan --internal-transform-prompt)"],
         ...["--bind", "start,change:transform:(skan --internal-transform)"],
+        ...["--bind", `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`],
+        ...["--bind", "result:transform:(skan --internal-transform-header)"],
         // colors
         ...[
           "bg+:#262626",
