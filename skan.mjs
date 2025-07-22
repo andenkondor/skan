@@ -277,6 +277,8 @@ async function main() {
         ...["--bind", "start,change:transform:(skan --internal-transform)"],
         ...["--bind", `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`],
         ...["--bind", "result:transform:(skan --internal-transform-header)"],
+        ...["--bind", "ctrl-x:exclude"],
+
         // colors
         ...[
           "bg+:#262626",
