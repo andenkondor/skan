@@ -291,6 +291,7 @@ async function main() {
           "hl:#5f87af",
           "info:#afaf87",
           "marker:#87ff00",
+          "nth:bold:italic",
           "pointer:#af5fff",
           "prompt:#d7005f",
           "spinner:#af5fff",
