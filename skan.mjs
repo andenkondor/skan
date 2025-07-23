@@ -142,6 +142,7 @@ function reload() {
       "--smart-case",
       ...["--color", "always"],
       ...rgParams,
+      "--",
       rgSearchTerm.trim(),
     ],
     {
