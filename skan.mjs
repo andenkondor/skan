@@ -169,16 +169,14 @@ function transformHeader() {
   let nth = "All";
 
   if (FZF_NTH === NTH.FILE_NAME) {
-    nth = "File name";
+    nth = "File";
   }
 
   if (FZF_NTH === NTH.CODE_LINE) {
-    nth = "Code";
+    nth = "LOC";
   }
 
-  const newHeader = `nth: ${nth}`;
-
-  echo(`transform-header(echo ${newHeader})`);
+  echo(`transform-header(echo ${nth})`);
 }
 
 function transformPrompt() {
@@ -259,6 +257,8 @@ async function main() {
         "--highlight-line",
         // simple options
         ...["--delimiter", ":"],
+        ...["--header-border", "rounded"],
+        ...["--header-label", "nth"],
         ...["--prompt", RG_SEARCH_PLACEHOLDER],
         ...[
           "--preview",
@@ -286,6 +286,7 @@ async function main() {
           "bg:#121212",
           "fg+:#d0d0d0",
           "fg:#d0d0d0",
+          "header-border:#5f87af",
           "header:#87afaf",
           "hl+:#5fd7ff",
           "hl:#5f87af",
