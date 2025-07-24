@@ -246,7 +246,7 @@ async function main() {
       process.exit(0);
     }
 
-    const fzfResult = $.spawnSync(
+    const { stdout, stderr } = $.spawnSync(
       "fzf",
       [
         // flags
@@ -304,7 +304,13 @@ async function main() {
       },
     );
 
-    const resultLines = fzfResult.stdout
+    if (stderr) {
+      echo(chalk.red("fzf failed"));
+      echo(stderr);
+      process.exit(1);
+    }
+
+    const resultLines = stdout
       .split("\n")
       .filter(Boolean)
       .map((entry) => {
