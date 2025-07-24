@@ -256,6 +256,7 @@ async function main() {
         "--multi",
         "--highlight-line",
         // simple options
+        ...["--info-command", 'echo -e "#$FZF_POS -- $FZF_INFO"'],
         ...["--delimiter", ":"],
         ...["--header-border", "rounded"],
         ...["--header-label", "nth"],
