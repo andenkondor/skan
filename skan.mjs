@@ -255,6 +255,7 @@ async function main() {
         "--disabled",
         "--multi",
         "--highlight-line",
+
         // simple options
         ...["--info-command", 'echo -e "#$FZF_POS -- $FZF_INFO"'],
         ...["--delimiter", ":"],
@@ -267,19 +268,19 @@ async function main() {
         ],
         ...["--preview-window", `~4,+{${NTH.LINE_NUMBER}}+4/3,<80(up)`],
         ...["--query", defaultSearch.join(" ")],
+
         // bindings
-        ...["--bind", "alt-a:select-all"],
-        ...["--bind", "alt-d:deselect-all"],
-        ...["--bind", "ctrl-/:toggle-preview"],
         ...[
-          "--bind",
+          "alt-a:select-all",
+          "alt-d:deselect-all",
+          "ctrl-/:toggle-preview",
+          "ctrl-g:transform:(skan --internal-transform-prompt)",
+          "ctrl-x:exclude-multi",
+          "result:transform:(skan --internal-transform-header)",
+          "start,change:transform:(skan --internal-transform)",
+          `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
-        ],
-        ...["--bind", "ctrl-g:transform:(skan --internal-transform-prompt)"],
-        ...["--bind", "start,change:transform:(skan --internal-transform)"],
-        ...["--bind", `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`],
-        ...["--bind", "result:transform:(skan --internal-transform-header)"],
-        ...["--bind", "ctrl-x:exclude"],
+        ].flatMap((s) => ["--bind", s]),
 
         // colors
         ...[
