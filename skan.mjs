@@ -159,7 +159,7 @@ function transform() {
 
   echo(
     [
-      ...(isRgSearch ? ["reload(sleep 0.1;skan --internal-reload)"] : []),
+      ...(isRgSearch ? ["reload(skan --internal-reload)"] : []),
       transformSearch,
     ].join("+"),
   );
@@ -276,7 +276,7 @@ async function main() {
           "ctrl-/:toggle-preview",
           "ctrl-g:transform:(skan --internal-transform-prompt)",
           "ctrl-x:exclude-multi",
-          "result:transform:(skan --internal-transform-header)",
+          "result:bg-transform:(skan --internal-transform-header)",
           "start,change:transform:(skan --internal-transform)",
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
