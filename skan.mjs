@@ -268,35 +268,13 @@ async function main() {
 
         // bindings
         ...[
-          "alt-a:select-all",
-          "alt-d:deselect-all",
-          "ctrl-/:toggle-preview",
           "ctrl-g:transform:(skan --internal-transform-prompt)",
-          "ctrl-x:exclude-multi",
           "result:bg-transform:(skan --internal-transform-header)",
           "start,change:transform:(skan --internal-transform)",
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
           `alt-enter:execute(nvim {${NTH.FILE_NAME}} +{${NTH.LINE_NUMBER}} )`,
         ].flatMap((s) => ["--bind", s]),
-
-        // colors
-        ...[
-          "bg+:#262626",
-          "bg:#121212",
-          "fg+:#d0d0d0",
-          "fg:#d0d0d0",
-          "header-border:#5f87af",
-          "header:#87afaf",
-          "hl+:#5fd7ff",
-          "hl:#5f87af",
-          "info:#afaf87",
-          "marker:#87ff00",
-          "nth:bold:italic",
-          "pointer:#af5fff",
-          "prompt:#d7005f",
-          "spinner:#af5fff",
-        ].flatMap((s) => ["--color", s]),
       ],
       {
         encoding: "utf-8",
