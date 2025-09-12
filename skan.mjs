@@ -19,6 +19,14 @@ const {
   argv: args,
 } = process;
 
+const HELP_TEXT = [
+  chalk.italic(chalk.red("Key bindings")),
+  "ctrl-g: toggle search mode (rg <-> fzf)",
+  "ctrl-n: switch column to search",
+  "alt-enter: open in nvim (keep search open)",
+  "ctrl-s: open in IDEA (keep search open)",
+].join("\n");
+
 function toBase64(input) {
   return Buffer.from(input).toString("base64");
 }
@@ -274,6 +282,7 @@ async function main() {
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
           `alt-enter:execute(nvim {${NTH.FILE_NAME}} +{${NTH.LINE_NUMBER}} )`,
+          `f1:change-footer(${HELP_TEXT})`,
         ].flatMap((s) => ["--bind", s]),
       ],
       {
