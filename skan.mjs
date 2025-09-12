@@ -65,27 +65,24 @@ async function handleFzfResult(fzfResult) {
 
   if (fzfResult.length === 1) {
     const { file, line, column } = fzfResult[0];
-    if (isSopsFile(file)) {
-      await $.spawnSync("sops", [file], {
-        stdio: "inherit",
-      });
-    } else {
-      await $.spawnSync(
-        vimishEditor,
-        [file, `+call cursor(${line},${column})`],
-        {
+
+    await (isSopsFile(file)
+      ? $.spawnSync("sops", [file], {
           stdio: "inherit",
-        },
-      );
-    }
-  } else {
-    const fzfOutputFile = createTempFile(
-      fzfResult.map((entry) => entry.original).join("\n"),
-    );
-    await $.spawnSync(vimishEditor, ["+copen", "-q", fzfOutputFile], {
-      stdio: "inherit",
-    });
+        })
+      : $.spawnSync(vimishEditor, [file, `+call cursor(${line},${column})`], {
+          stdio: "inherit",
+        }));
+
+    return;
   }
+
+  const fzfOutputFile = createTempFile(
+    fzfResult.map((entry) => entry.original).join("\n"),
+  );
+  await $.spawnSync(vimishEditor, ["+copen", "-q", fzfOutputFile], {
+    stdio: "inherit",
+  });
 }
 
 function getCurrentState() {
