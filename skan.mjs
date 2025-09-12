@@ -23,7 +23,7 @@ const HELP_TEXT = [
   chalk.italic(chalk.red("Key bindings")),
   "ctrl-g: toggle search mode (rg <-> fzf)",
   "ctrl-n: switch column to search",
-  "alt-enter: open in nvim (keep search open)",
+  "alt-enter: open single or multiple in nvim (keep search open)",
   "ctrl-s: open in IDEA (keep search open)",
 ].join("\n");
 
@@ -279,7 +279,7 @@ async function main() {
           "start,change:transform:(skan --internal-transform)",
           // key
           "ctrl-g:transform:(skan --internal-transform-prompt)",
-          `alt-enter:execute(nvim {${NTH.FILE_NAME}} +{${NTH.LINE_NUMBER}} )`,
+          "alt-enter:execute(nvim -q {+f})",
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
           `f1:change-footer(${HELP_TEXT})`,
