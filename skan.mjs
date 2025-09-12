@@ -69,8 +69,6 @@ async function handleFzfResult(fzfResult) {
     throw new Error("no fzf result");
   }
 
-  const vimishEditor = (await which("nvim", { nothrow: true })) ?? "vim";
-
   if (fzfResult.length === 1) {
     const { file, line, column } = fzfResult[0];
 
@@ -78,7 +76,7 @@ async function handleFzfResult(fzfResult) {
       ? $.spawnSync("sops", [file], {
           stdio: "inherit",
         })
-      : $.spawnSync(vimishEditor, [file, `+call cursor(${line},${column})`], {
+      : $.spawnSync("nvim", [file, `+call cursor(${line},${column})`], {
           stdio: "inherit",
         }));
 
@@ -88,7 +86,7 @@ async function handleFzfResult(fzfResult) {
   const fzfOutputFile = createTempFile(
     fzfResult.map((entry) => entry.original).join("\n"),
   );
-  await $.spawnSync(vimishEditor, ["+copen", "-q", fzfOutputFile], {
+  await $.spawnSync("nvim", ["+copen", "-q", fzfOutputFile], {
     stdio: "inherit",
   });
 }
