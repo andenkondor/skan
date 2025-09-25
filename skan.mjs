@@ -2,6 +2,8 @@
 
 $.verbose = true;
 
+const SKAN_EXECUTABLE = "skan";
+
 const RG_SEARCH_PLACEHOLDER = ":rg>";
 const FZF_SEARCH_PLACEHOLDER = ":fzf>";
 
@@ -162,7 +164,7 @@ function transform() {
 
   echo(
     [
-      ...(isRgSearch ? ["reload(skan --internal-reload)"] : []),
+      ...(isRgSearch ? [`reload(${SKAN_EXECUTABLE} --internal-reload)`] : []),
       transformSearch,
     ].join("+"),
   );
@@ -267,7 +269,7 @@ async function main() {
         ...["--prompt", RG_SEARCH_PLACEHOLDER],
         ...[
           "--preview",
-          `skan --internal-preview {${NTH.FILE_NAME}} {${NTH.LINE_NUMBER}}`,
+          `${SKAN_EXECUTABLE} --internal-preview {${NTH.FILE_NAME}} {${NTH.LINE_NUMBER}}`,
         ],
         ...["--preview-window", `~4,+{${NTH.LINE_NUMBER}}+4/3,<80(up)`],
         ...["--query", defaultSearch.join(" ")],
@@ -275,10 +277,10 @@ async function main() {
         // bindings
         ...[
           // event
-          "result:bg-transform:(skan --internal-transform-header)",
-          "start,change:transform:(skan --internal-transform)",
+          `result:bg-transform:(${SKAN_EXECUTABLE} --internal-transform-header)`,
+          `start,change:transform:(${SKAN_EXECUTABLE} --internal-transform)`,
           // key
-          "ctrl-g:transform:(skan --internal-transform-prompt)",
+          `ctrl-g:transform:(${SKAN_EXECUTABLE} --internal-transform-prompt)`,
           "alt-enter:execute(nvim -q {+f})",
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
