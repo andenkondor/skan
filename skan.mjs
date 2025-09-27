@@ -3,6 +3,7 @@
 $.verbose = true;
 
 const SKAN_EXECUTABLE = "skan";
+const HISTORY_FILE = `${os.homedir()}/.skan`;
 
 const RG_SEARCH_PLACEHOLDER = ":rg>";
 const FZF_SEARCH_PLACEHOLDER = ":fzf>";
@@ -170,6 +171,42 @@ function transform() {
   );
 }
 
+async function transformInit(templatedId) {
+  if (!templatedId) {
+    throw new Error("No template id provided");
+  }
+
+  const result = (await $`${["cat", HISTORY_FILE]}`)
+    .lines()
+    .find((l) => l.startsWith(templatedId));
+
+  if (!result) {
+    throw new Error(`Template with id ${templatedId} not found.`);
+  }
+
+  const [_, rgSearch, fzfSearch, isRgSearchString, nth] = result.split(",");
+
+  const isRgSearch = JSON.parse(isRgSearchString);
+
+  const prompt = isRgSearch
+    ? fzfSearch + RG_SEARCH_PLACEHOLDER
+    : rgSearch + FZF_SEARCH_PLACEHOLDER;
+
+  const query = isRgSearch ? rgSearch : fzfSearch;
+
+  echo(
+    [
+      ...(prompt
+        ? [`transform-prompt(echo ${toBase64(prompt)} | base64 -d)`]
+        : []),
+      ...(nth ? [`change-nth(${nth})`] : []),
+      ...(query
+        ? [`transform-query(echo ${toBase64(query)} | base64 -d)`]
+        : []),
+    ].join("+"),
+  );
+}
+
 function transformHeader() {
   let nth = "All";
 
@@ -203,27 +240,62 @@ function transformPrompt() {
   );
 }
 
+async function saveState() {
+  const { rgSearchTerm, rgParams, fzfSearchTerm, isRgSearch } =
+    getCurrentState();
+
+  const rgSearchAndParams = rgParams.length
+    ? [rgSearchTerm, RG_SEARCH_PARAM_DIVIDER, rgParams.join(" ")].join(" ")
+    : rgSearchTerm;
+
+  const stateLog = [
+    crypto.randomUUID(),
+    rgSearchAndParams,
+    fzfSearchTerm,
+    isRgSearch,
+    FZF_NTH ?? 0,
+  ].join(",");
+
+  await fs.appendFile(HISTORY_FILE, stateLog + "\n");
+}
+
 async function main() {
   let exitCode = 0;
 
   try {
     const {
       _: defaultSearch,
+      a: internalSaveState,
       h: internalTransformHeader,
       p: internalTransformPrompt,
       r: internalReload,
+      t: templatedId,
+      T: internalTranformInit,
       v: internalPreview,
       z: internalTransform,
     } = minimist(args.slice(3), {
       alias: {
+        T: "internal-transform-init",
+        a: "internal-save-state",
         h: "internal-transform-header",
         p: "internal-transform-prompt",
         r: "internal-reload",
+        t: "template-id",
         v: "internal-preview",
         z: "internal-transform",
       },
-      boolean: ["h", "p", "r", "v", "z"],
+      boolean: ["a", "h", "p", "r", "v", "z"],
     });
+
+    if (internalSaveState) {
+      await saveState();
+      process.exit(0);
+    }
+
+    if (internalTranformInit) {
+      await transformInit(internalTranformInit);
+      process.exit(0);
+    }
 
     if (internalTransform) {
       transform();
@@ -277,15 +349,21 @@ async function main() {
         // bindings
         ...[
           // event
-          `result:bg-transform:(${SKAN_EXECUTABLE} --internal-transform-header)`,
-          `start,change:transform:(${SKAN_EXECUTABLE} --internal-transform)`,
           // key
-          "alt-enter:accept",
-          "enter:execute(nvim -q {+f})",
+          `alt-enter:execute-silent(${SKAN_EXECUTABLE} --internal-save-state)+accept`,
+          `ctrl-c:execute-silent(${SKAN_EXECUTABLE} --internal-save-state)+abort`,
+          `change:transform:(${SKAN_EXECUTABLE} --internal-transform)`,
+          ...(templatedId
+            ? [
+                `start:transform(${SKAN_EXECUTABLE} --internal-transform-init ${templatedId})`,
+              ]
+            : []),
           `ctrl-g:transform:(${SKAN_EXECUTABLE} --internal-transform-prompt)`,
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
-          `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
+          `ctrl-s:execute-silent(${SKAN_EXECUTABLE} --internal-save-state)+execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
+          `enter:execute-silent(${SKAN_EXECUTABLE} --internal-save-state)+execute(nvim -q {+f})`,
           `f1:change-footer(${HELP_TEXT})`,
+          `result:bg-transform:(${SKAN_EXECUTABLE} --internal-transform-header)`,
         ].flatMap((s) => ["--bind", s]),
       ],
       {
