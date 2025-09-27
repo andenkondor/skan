@@ -280,8 +280,9 @@ async function main() {
           `result:bg-transform:(${SKAN_EXECUTABLE} --internal-transform-header)`,
           `start,change:transform:(${SKAN_EXECUTABLE} --internal-transform)`,
           // key
+          "alt-enter:accept",
+          "enter:execute(nvim -q {+f})",
           `ctrl-g:transform:(${SKAN_EXECUTABLE} --internal-transform-prompt)`,
-          "alt-enter:execute(nvim -q {+f})",
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
           `f1:change-footer(${HELP_TEXT})`,
