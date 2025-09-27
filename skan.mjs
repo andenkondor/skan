@@ -26,7 +26,8 @@ const HELP_TEXT = [
   chalk.italic(chalk.red("Key bindings")),
   "ctrl-g: toggle search mode (rg <-> fzf)",
   "ctrl-n: switch column to search",
-  "alt-enter: open single or multiple in nvim (keep search open)",
+  "enter: open single or multiple in nvim (keep search open)",
+  "alt-enter: open single or multiple in nvim (close skan)",
   "ctrl-s: open in IDEA (keep search open)",
 ].join("\n");
 
