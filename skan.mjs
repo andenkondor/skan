@@ -288,6 +288,8 @@ async function main() {
       boolean: ["a", "h", "p", "r", "v", "z"],
     });
 
+    const query = defaultSearch.join(" ").trim();
+
     if (internalSaveState) {
       await saveState();
       process.exit(0);
@@ -345,8 +347,6 @@ async function main() {
           `${SKAN_EXECUTABLE} --internal-preview {${NTH.FILE_NAME}} {${NTH.LINE_NUMBER}}`,
         ],
         ...["--preview-window", `~4,+{${NTH.LINE_NUMBER}}+4/3,<80(up)`],
-        ...["--query", defaultSearch.join(" ")],
-
         // bindings
         ...[
           // event
@@ -358,7 +358,11 @@ async function main() {
             ? [
                 `start:transform(${SKAN_EXECUTABLE} --internal-transform-init ${templatedId})`,
               ]
-            : []),
+            : query
+              ? [
+                  `start:change-query(${query})+transform:(${SKAN_EXECUTABLE} --internal-transform)`,
+                ]
+              : []),
           `ctrl-g:transform:(${SKAN_EXECUTABLE} --internal-transform-prompt)`,
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
           `ctrl-s:execute-silent(${SKAN_EXECUTABLE} --internal-save-state)+execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
