@@ -123,7 +123,7 @@ function getCurrentState() {
   const fzfSearchTerm = isRgSearch ? inactiveSearchQuery : activeSearchQuery;
 
   return {
-    rgSearchTerm,
+    rgSearchTerm: rgSearchTerm.trim(),
     rgParams,
     fzfSearchTerm,
     isRgSearch,
@@ -133,9 +133,9 @@ function getCurrentState() {
 }
 
 function reload() {
-  const { isRgSearch, rgSearchTerm, rgParams } = getCurrentState();
+  const { rgSearchTerm, rgParams } = getCurrentState();
 
-  if (!isRgSearch || !rgSearchTerm) {
+  if (rgSearchTerm === undefined || rgSearchTerm === "") {
     return;
   }
 
@@ -204,6 +204,7 @@ async function transformInit(templatedId) {
       ...(query
         ? [`transform-query(echo ${toBase64(query)} | base64 -d)`]
         : []),
+      `reload(${SKAN_EXECUTABLE} --internal-reload)`,
     ].join("+"),
   );
 }
