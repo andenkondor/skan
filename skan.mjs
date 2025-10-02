@@ -135,7 +135,7 @@ function getCurrentState() {
 function reload() {
   const { rgSearchTerm, rgParams } = getCurrentState();
 
-  if (rgSearchTerm === undefined || rgSearchTerm === "") {
+  if (!rgSearchTerm) {
     return;
   }
 
@@ -245,6 +245,10 @@ function transformPrompt() {
 async function saveState() {
   const { rgSearchTerm, rgParams, fzfSearchTerm, isRgSearch } =
     getCurrentState();
+
+  if (!rgSearchTerm) {
+    return;
+  }
 
   const rgSearchAndParams = rgParams.length
     ? [rgSearchTerm, RG_SEARCH_PARAM_DIVIDER, rgParams.join(" ")].join(" ")
