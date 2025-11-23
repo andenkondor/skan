@@ -29,6 +29,7 @@ const HELP_TEXT = [
   "enter: open single or multiple in nvim (keep search open)",
   "alt-enter: open single or multiple in nvim (close skan)",
   "ctrl-s: open in IDEA (keep search open)",
+  "ctrl-r: refresh search (both rg and fzf)",
 ].join("\n");
 
 function toBase64(input) {
@@ -370,6 +371,7 @@ async function main() {
               : []),
           `ctrl-g:transform:(${SKAN_EXECUTABLE} --internal-transform-prompt)`,
           `ctrl-n:change-nth(${NTH.FILE_NAME}|${NTH.CODE_LINE}|)`,
+          `ctrl-r:transform:(${SKAN_EXECUTABLE} --internal-transform)`,
           `ctrl-s:execute-silent(${SKAN_EXECUTABLE} --internal-save-state)+execute(idea --line {${NTH.LINE_NUMBER}} {${NTH.FILE_NAME}})`,
           `enter:execute-silent(${SKAN_EXECUTABLE} --internal-save-state)+execute(nvim -q {+f})`,
           `f1:change-footer(${HELP_TEXT})`,

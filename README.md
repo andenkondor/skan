@@ -47,6 +47,7 @@ skan -s "search term"
 - `Alt-a` - Select all files
 - `Alt-d` - Deselect all files
 - `Ctrl-/` - Toggle preview window
+- `Ctrl-r` - Refresh page
 
 ## How It Works
 
