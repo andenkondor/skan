@@ -23,7 +23,7 @@ const {
 } = process;
 
 const HELP_TEXT = [
-  chalk.italic(chalk.red("Key bindings")),
+  chalk.italic.red("Key bindings"),
   "ctrl-g: toggle search mode (rg <-> fzf)",
   "ctrl-n: switch column to search",
   "enter: open single or multiple in nvim (keep search open)",
